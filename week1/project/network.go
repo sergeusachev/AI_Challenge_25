@@ -38,7 +38,27 @@ type CompletionResponse struct {
 	} `json:"choices"`
 }
 
-func GetRequestToken(oauthToken string) (string, error) {
+type NetworkService struct{
+	oauthToken string
+	requestToken string
+}
+
+func GetNetworkService() (*NetworkService, error) {
+	networkService := &NetworkService{
+		oauthToken:		GetOauthToken(),
+		requestToken:	"",
+	}
+
+	requestToken, err := networkService.GetRequestToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get request token: %w", err)
+	}
+	networkService.requestToken = requestToken
+
+	return networkService, nil
+}
+
+func (networkService *NetworkService) GetRequestToken() (string, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -55,7 +75,7 @@ func GetRequestToken(oauthToken string) (string, error) {
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+oauthToken)
+	req.Header.Set("Authorization", "Bearer "+networkService.oauthToken)
 	req.Header.Set("RqUID", rqUID)
 
 	resp, err := client.Do(req)
@@ -78,7 +98,7 @@ func GetRequestToken(oauthToken string) (string, error) {
 	return tokenResp.AccessToken, nil
 }
 
-func GetCompletion(requestToken, userQuestion string) (string, error) {
+func (networkService *NetworkService) GetCompletion(userQuestion string) (string, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -108,7 +128,63 @@ func GetCompletion(requestToken, userQuestion string) (string, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+requestToken)
+	req.Header.Set("Authorization", "Bearer "+networkService.requestToken)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var completionResp CompletionResponse
+	err = json.Unmarshal(body, &completionResp)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if len(completionResp.Choices) == 0 {
+		return "", fmt.Errorf("no response from API")
+	}
+
+	return completionResp.Choices[0].Message.Content, nil
+}
+
+func (networkService *NetworkService) SetContext(systemPrompt string) (string, error) {
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	reqData := CompletionRequest{
+		Model: "GigaChat",
+		Messages: []Message{
+			{
+				Role:    "system",
+				Content: systemPrompt,
+			},
+		},
+		RepetitionPenalty: 1,
+	}
+
+	jsonData, err := json.Marshal(reqData)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", completionsURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+networkService.requestToken)
 
 	resp, err := client.Do(req)
 	if err != nil {

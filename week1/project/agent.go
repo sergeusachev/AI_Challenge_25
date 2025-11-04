@@ -2,24 +2,31 @@ package main
 
 import "fmt"
 
+const agentContext = "Ты специалист по новейшей истории России, специализируешься конкретно на истории России c 1991 г. по настоящее время."
+
 type Agent struct {
-	requestToken string
+	networkService *NetworkService
 }
 
 func NewAgent() (*Agent, error) {
-	oauthToken := GetOauthToken()
-	requestToken, err := GetRequestToken(oauthToken)
+	networkService, err := GetNetworkService()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get request token: %w", err)
+		return nil, fmt.Errorf("failed to initialize NetworkService: %w", err)
 	}
 
+	contextSetAnswer, err := networkService.SetContext(agentContext)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set context: %w", err)
+	}
+	_ = contextSetAnswer
+
 	return &Agent{
-		requestToken: requestToken,
+		networkService: networkService,
 	}, nil
 }
 
 func (a *Agent) AskQuestion(question string) (string, error) {
-	answer, err := GetCompletion(a.requestToken, question)
+	answer, err := a.networkService.GetCompletion(question)
 	if err != nil {
 		return "", fmt.Errorf("failed to get answer: %w", err)
 	}
