@@ -1,4 +1,4 @@
-package main
+package common
 
 import (
 	"bytes"
@@ -98,7 +98,7 @@ func (networkService *NetworkService) GetRequestToken() (string, error) {
 	return tokenResp.AccessToken, nil
 }
 
-func (networkService *NetworkService) GetCompletion(userQuestion string) (string, error) {
+func (networkService *NetworkService) GetCompletion(messages []Message) (*Message, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -107,23 +107,18 @@ func (networkService *NetworkService) GetCompletion(userQuestion string) (string
 
 	reqData := CompletionRequest{
 		Model: "GigaChat",
-		Messages: []Message{
-			{
-				Role:    "user",
-				Content: userQuestion,
-			},
-		},
+		Messages: messages,
 		RepetitionPenalty: 1,
 	}
 
 	jsonData, err := json.Marshal(reqData)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	req, err := http.NewRequest("POST", completionsURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -132,80 +127,27 @@ func (networkService *NetworkService) GetCompletion(userQuestion string) (string
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var completionResp CompletionResponse
 	err = json.Unmarshal(body, &completionResp)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse response: %w", err)
+		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
 	if len(completionResp.Choices) == 0 {
-		return "", fmt.Errorf("no response from API")
+		return nil, fmt.Errorf("no response from API")
 	}
-
-	return completionResp.Choices[0].Message.Content, nil
-}
-
-func (networkService *NetworkService) SetContext(systemPrompt string) (string, error) {
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	reqData := CompletionRequest{
-		Model: "GigaChat",
-		Messages: []Message{
-			{
-				Role:    "system",
-				Content: systemPrompt,
-			},
-		},
-		RepetitionPenalty: 1,
-	}
-
-	jsonData, err := json.Marshal(reqData)
-	if err != nil {
-		return "", err
-	}
-
-	req, err := http.NewRequest("POST", completionsURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+networkService.requestToken)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var completionResp CompletionResponse
-	err = json.Unmarshal(body, &completionResp)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	if len(completionResp.Choices) == 0 {
-		return "", fmt.Errorf("no response from API")
-	}
-
-	return completionResp.Choices[0].Message.Content, nil
+	
+	return &Message{
+		Role: completionResp.Choices[0].Message.Role,
+		Content: completionResp.Choices[0].Message.Content,
+	}, nil
 }

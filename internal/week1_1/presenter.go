@@ -1,4 +1,4 @@
-package main
+package week1_1
 
 import (
 	"bufio"
@@ -6,8 +6,8 @@ import (
 	"os"
 )
 
-func main() {
-	agent, err := NewAgent()
+func LaunchAgent(agentContext string) {
+	agent, err := NewAgent(agentContext)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Ошибка инициализации агента: %v\n", err)
 		os.Exit(1)
@@ -30,6 +30,7 @@ func main() {
 			continue
 		}
 
+		fmt.Println()
 		fmt.Println(answer)
 		fmt.Println()
 	}
