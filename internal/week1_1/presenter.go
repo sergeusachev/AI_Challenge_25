@@ -6,7 +6,11 @@ import (
 	"os"
 )
 
-func LaunchAgent(agentContext string) {
+type TUIConfig struct {
+	Prompt string
+}
+
+func LaunchAgent(agentContext string, config TUIConfig) {
 	agent, err := NewAgent(agentContext)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Ошибка инициализации агента: %v\n", err)
@@ -16,7 +20,7 @@ func LaunchAgent(agentContext string) {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
-		fmt.Print("Пожалуйста введите ваш вопрос: ")
+		fmt.Print(config.Prompt)
 
 		if !scanner.Scan() {
 			break
