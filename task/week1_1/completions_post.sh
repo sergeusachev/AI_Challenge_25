@@ -12,5 +12,6 @@ curl -i -k -L POST 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions
         "content": "В каком году избрался Ельцин?"
       }
     ],
+    "temperature": 0.002
     "repetition_penalty": 1
   }'

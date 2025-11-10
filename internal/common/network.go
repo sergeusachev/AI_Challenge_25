@@ -29,6 +29,7 @@ type Message struct {
 type CompletionRequest struct {
 	Model             string    `json:"model"`
 	Messages          []Message `json:"messages"`
+	Temperature		  float64	`json:"temperature"`	
 	RepetitionPenalty float64   `json:"repetition_penalty"`
 }
 
@@ -73,8 +74,8 @@ func (networkService *NetworkService) GetRequestToken() (string, error) {
 		return "", err
 	}
 
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded") //what does it mean?
+	req.Header.Set("Accept", "application/json") //what does it mean? Accept
 	req.Header.Set("Authorization", "Bearer "+networkService.oauthToken)
 	req.Header.Set("RqUID", rqUID)
 
@@ -98,7 +99,7 @@ func (networkService *NetworkService) GetRequestToken() (string, error) {
 	return tokenResp.AccessToken, nil
 }
 
-func (networkService *NetworkService) GetCompletion(messages []Message) (*Message, error) {
+func (networkService *NetworkService) GetCompletion(messages []Message, model string, temperature float64) (*Message, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -106,8 +107,9 @@ func (networkService *NetworkService) GetCompletion(messages []Message) (*Messag
 	}
 
 	reqData := CompletionRequest{
-		Model: "GigaChat",
+		Model: model,
 		Messages: messages,
+		Temperature: temperature,
 		RepetitionPenalty: 1,
 	}
 
