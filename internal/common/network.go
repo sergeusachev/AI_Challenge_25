@@ -14,30 +14,9 @@ import (
 const (
 	oauthURL       = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
 	completionsURL = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions"
+	tokensCountURL = "https://gigachat.devices.sberbank.ru/api/v1/tokens/count"
 	rqUID          = "270fee8f-3594-4cb7-b9cb-d0690691f735"
 )
-
-type TokenResponse struct {
-	AccessToken string `json:"access_token"`
-}
-
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type CompletionRequest struct {
-	Model             string    `json:"model"`
-	Messages          []Message `json:"messages"`
-	Temperature		  float64	`json:"temperature"`	
-	RepetitionPenalty float64   `json:"repetition_penalty"`
-}
-
-type CompletionResponse struct {
-	Choices []struct {
-		Message Message `json:"message"`
-	} `json:"choices"`
-}
 
 type NetworkService struct{
 	oauthToken string
@@ -151,5 +130,57 @@ func (networkService *NetworkService) GetCompletion(messages []Message, model st
 	return &Message{
 		Role: completionResp.Choices[0].Message.Role,
 		Content: completionResp.Choices[0].Message.Content,
+	}, nil
+}
+
+func (networkService *NetworkService) GetTokensCount(text string, model string) (*TokensCountResponse, error) {
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	reqData := TokensCountRequest{
+		Model: model,
+		Input: []string{ text },
+	}
+
+	jsonData, err := json.Marshal(reqData)
+	//fmt.Println("JSON:", string(jsonData))
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", tokensCountURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+networkService.requestToken)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	//fmt.Println("BODY:", string(body))
+	var tokensCountResponse []TokensCountResponse
+	err = json.Unmarshal(body, &tokensCountResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+	
+	return &TokensCountResponse{
+		Object: 	tokensCountResponse[0].Object,
+		Tokens: 	tokensCountResponse[0].Tokens,
+		Characters: tokensCountResponse[0].Characters,
 	}, nil
 }

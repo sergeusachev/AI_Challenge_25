@@ -22,7 +22,7 @@ func NewAgent(networkService *NetworkService) *Agent {
 
 func (a *Agent) SetContext(agentContext string) {
 	agentContextMessage := Message{
-		Role:    "system",
+		Role:    "system", // extract to const
 		Content: agentContext,
 	}
 
@@ -35,10 +35,9 @@ func (a *Agent) SetTemperature(temperature float64) {
 
 func (a *Agent) AskQuestion(question string) (string, error) {
 	a.messages = append(a.messages, Message{
-		Role:    "user",
+		Role:    "user", // extract to const
 		Content: question,
 	})
-	fmt.Println("DEBUG, temperature =", a.temperature)
 	answerMessage, err := a.networkService.GetCompletion(a.messages, a.model, a.temperature) //extract to data bean
 	if err != nil {
 		return "", fmt.Errorf("failed to get answer: %w", err)
