@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-	model := "GigaChat-2"
 	networkService := getNetworkService()
 	agent := common.NewAgent(networkService)
 	scanner := bufio.NewScanner(os.Stdin)
@@ -24,24 +23,26 @@ func main() {
 			fmt.Println("1 Answer error: ", err)
 			continue
 		}
+		/*
 		tokensCountInputResponse, err := networkService.GetTokensCount(input, model)
 		if err != nil {
 			fmt.Println("1 GetTokensCount error: ", err)
 			continue
 		}
+			*/
 		fmt.Println()
 		fmt.Println("Вопрос: ", input)
-		fmt.Println("Символов в запросе: ", tokensCountInputResponse.Characters)
-		fmt.Println("Токенов в запросе: ", tokensCountInputResponse.Tokens)
+		//fmt.Println("Символов в запросе: ", tokensCountInputResponse.Characters)
+		//fmt.Println("Токенов в запросе: ", tokensCountInputResponse.Tokens)
 		fmt.Println()
 		fmt.Println("Ответ:", answer)
-		tokensCountOutputResponse, err := networkService.GetTokensCount(answer, model)
+		/*tokensCountOutputResponse, err := networkService.GetTokensCount(answer, model)
 		if err != nil {
 			fmt.Println("2 GetTokensCount error: ", err)
 			continue
 		}
 		fmt.Println("Символов в ответе: ", tokensCountOutputResponse.Characters)
-		fmt.Println("Токенов в ответе: ", tokensCountOutputResponse.Tokens)
+		fmt.Println("Токенов в ответе: ", tokensCountOutputResponse.Tokens)*/
 		fmt.Println()
 		fmt.Println()
 	}
