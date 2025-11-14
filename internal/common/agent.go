@@ -5,7 +5,7 @@ import (
 )
 
 type Agent struct {
-	model string
+	Model string
 	temperature float64
 	messages []Message
 	networkService *NetworkService
@@ -13,7 +13,7 @@ type Agent struct {
 
 func NewAgent(networkService *NetworkService) *Agent {
 	return &Agent{
-		model: "GigaChat-2",
+		Model: "GigaChat-2", // extract to const
 		temperature: 0.0,
 		messages: []Message{},
 		networkService: networkService,
@@ -29,22 +29,12 @@ func (a *Agent) SetContext(agentContext string) {
 	a.messages = append(a.messages, agentContextMessage)
 }
 
-func (a *Agent) SetTemperature(temperature float64) {
-	a.temperature = temperature
+func (a *Agent) GetHistorySize() int {
+	return len(a.messages) - 1
 }
 
-func (a *Agent) AskQuestion(question string) (string, error) {
-	a.messages = append(a.messages, Message{
-		Role:    "user", // extract to const
-		Content: question,
-	})
-	answerMessage, err := a.networkService.GetCompletion(a.messages, a.model, a.temperature) //extract to data bean
-	if err != nil {
-		return "", fmt.Errorf("failed to get answer: %w", err)
-	}
-	a.messages = append(a.messages, *answerMessage)
-
-	return (*answerMessage).Content, nil
+func (a *Agent) ClearHistory() {
+	a.messages = []Message{}
 }
 
 func (a *Agent) GetContext() string {
@@ -54,3 +44,27 @@ func (a *Agent) GetContext() string {
 
 	return a.messages[0].Content
 }
+
+func (a *Agent) SetTemperature(temperature float64) {
+	a.temperature = temperature
+}
+
+func (a *Agent) SetModel(model string) {
+	a.Model = model
+}
+
+func (a *Agent) AskQuestion(question string) (string, error) {
+	a.messages = append(a.messages, Message{
+		Role:    "user", // extract to const
+		Content: question,
+	})
+	answerMessage, err := a.networkService.GetCompletion(a.messages, a.Model, a.temperature) //extract to data bean
+	if err != nil {
+		return "", fmt.Errorf("failed to get answer: %w", err) // figure out with error, how to orginize
+	}
+	a.messages = append(a.messages, *answerMessage)
+
+	return (*answerMessage).Content, nil
+}
+
+

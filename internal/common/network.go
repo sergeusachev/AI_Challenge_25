@@ -133,7 +133,7 @@ func (networkService *NetworkService) GetCompletion(messages []Message, model st
 	}, nil
 }
 
-func (networkService *NetworkService) GetTokensCount(text string, model string) (*TokensCountResponse, error) {
+func (networkService *NetworkService) GetTokensCount(lines []string, model string) ([]TokensCountResponse, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -142,7 +142,7 @@ func (networkService *NetworkService) GetTokensCount(text string, model string) 
 
 	reqData := TokensCountRequest{
 		Model: model,
-		Input: []string{ text },
+		Input: lines,
 	}
 
 	jsonData, err := json.Marshal(reqData)
@@ -178,9 +178,5 @@ func (networkService *NetworkService) GetTokensCount(text string, model string) 
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 	
-	return &TokensCountResponse{
-		Object: 	tokensCountResponse[0].Object,
-		Tokens: 	tokensCountResponse[0].Tokens,
-		Characters: tokensCountResponse[0].Characters,
-	}, nil
+	return tokensCountResponse, nil
 }
