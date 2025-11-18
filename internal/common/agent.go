@@ -9,14 +9,42 @@ type Agent struct {
 	temperature float64
 	messages []Message
 	networkService *NetworkService
+	dbService *DbService
 }
 
 func NewAgent(networkService *NetworkService) *Agent {
+	dbService, err := NewDbService()
+	if err != nil {
+		fmt.Println("Warning: failed to initialize DbService:", err)
+		return &Agent{
+			Model: "GigaChat-2", // extract to const
+			temperature: 0.0,
+			messages: []Message{},
+			networkService: networkService,
+			dbService: nil,
+		}
+	}
+
+	messages, err := dbService.LoadMessages()
+	if err != nil {
+		fmt.Println("Warning: failed to load messages from DB:", err)
+		messages = []Message{}
+	}
+
 	return &Agent{
 		Model: "GigaChat-2", // extract to const
 		temperature: 0.0,
-		messages: []Message{},
+		messages: messages,
 		networkService: networkService,
+		dbService: dbService,
+	}
+}
+
+func (a *Agent) saveMessages() {
+	if a.dbService != nil {
+		if err := a.dbService.SaveMessages(a.messages); err != nil {
+			fmt.Println("Warning: failed to save messages to DB:", err)
+		}
 	}
 }
 
@@ -27,6 +55,7 @@ func (a *Agent) SetContext(agentContext string) {
 	}
 
 	a.messages = append(a.messages, agentContextMessage)
+	a.saveMessages()
 }
 
 func (a *Agent) GetHistorySize() int {
@@ -35,13 +64,13 @@ func (a *Agent) GetHistorySize() int {
 
 func (a *Agent) ClearHistory() {
 	a.messages = []Message{}
+	a.saveMessages()
 }
 
 func (a *Agent) GetContext() string {
 	if len(a.messages) == 0 || a.messages[0].Role != "system" {
 		return ""
 	}
-
 	return a.messages[0].Content
 }
 
@@ -63,8 +92,6 @@ func (a *Agent) AskQuestion(question string) (string, error) {
 		return "", fmt.Errorf("failed to get answer: %w", err) // figure out with error, how to orginize
 	}
 	a.messages = append(a.messages, *answerMessage)
-
+	a.saveMessages()
 	return (*answerMessage).Content, nil
 }
-
-
