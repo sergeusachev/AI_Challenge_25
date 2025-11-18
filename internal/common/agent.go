@@ -71,7 +71,6 @@ func (a *Agent) GetContext() string {
 	if len(a.messages) == 0 || a.messages[0].Role != "system" {
 		return ""
 	}
-
 	return a.messages[0].Content
 }
 
@@ -94,8 +93,5 @@ func (a *Agent) AskQuestion(question string) (string, error) {
 	}
 	a.messages = append(a.messages, *answerMessage)
 	a.saveMessages()
-
 	return (*answerMessage).Content, nil
 }
-
-

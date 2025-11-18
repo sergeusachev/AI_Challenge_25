@@ -34,6 +34,5 @@ func getNetworkService() *common.NetworkService {
 		fmt.Println("Network service creation error: ", err)
 		panic(err)
 	}
-
 	return networkService
 }
